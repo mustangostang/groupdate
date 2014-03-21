@@ -71,7 +71,7 @@ module Groupdate
 
           when 'SQLite'
             if field == "week"
-              ["strftime('%%Y-%%m-%%d 00:00:00 UTC', #{column}, '-6 days', 'weekday 0')"]
+              ["strftime('%%Y-%%m-%%d 00:00:00 UTC', #{column}, '-6 days', 'weekday #{(week_start+1)%7}')"]
             else
               format =
                 case field
