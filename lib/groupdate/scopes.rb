@@ -55,7 +55,6 @@ module Groupdate
                 else # year
                   "%Y-01-01 00:00:00"
                 end
-
               ["DATE_ADD(CONVERT_TZ(DATE_FORMAT(CONVERT_TZ(DATE_SUB(#{column}, INTERVAL #{day_start} HOUR), '+00:00', ?), '#{format}'), ?, '+00:00'), INTERVAL #{day_start} HOUR)", time_zone, time_zone]
             end
           when "PostgreSQL", "PostGIS"
@@ -69,6 +68,35 @@ module Groupdate
             else
               ["(DATE_TRUNC('#{field}', (#{column}::timestamptz - INTERVAL '#{day_start} hour') AT TIME ZONE ?) + INTERVAL '#{day_start} hour') AT TIME ZONE ?", time_zone, time_zone]
             end
+
+          when 'SQLite'
+            if field == "week"
+              ["strftime('%%Y-%%m-%%d 00:00:00 UTC', #{column}, '-6 days', 'weekday 0')"]
+            else
+              format =
+                case field
+                  when "hour_of_day"
+                    "%H"
+                  when "day_of_week"
+                    "%w"
+                  when "second"
+                    "%Y-%m-%d %H:%M:%S UTC"
+                  when "minute"
+                    "%Y-%m-%d %H:%M:00 UTC"
+                  when "hour"
+                    "%Y-%m-%d %H:00:00 UTC"
+                  when "day"
+                    "%Y-%m-%d 00:00:00 UTC"
+                  when "month"
+                    "%Y-%m-01 00:00:00 UTC"
+                  when "year"
+                    "%Y-01-01 00:00:00 UTC"
+                  else
+                    raise "Unrecognized grouping: #{field}."
+                  end
+                ["strftime('#{format.gsub(/%/, '%%')}', #{column})"]
+            end
+
           else
             raise "Connection adapter not supported: #{connection.adapter_name}"
           end
